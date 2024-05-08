@@ -1,0 +1,107 @@
+project_name: scylla-manager
+dist: release
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^dist:'
+      - '^docs:'
+      - '^makefile:'
+      - '^testing:'
+
+snapshot:
+    name_template: '{{ .Version }}-SNAPSHOT'
+
+builds:
+  - id: ethscan
+    dir: ../pkg
+    main: ./cmd/ethscan
+    binary: scylla-manager
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -extldflags '-static'
+      - -X github.com/scylladb/scylla-manager/v3/pkg.version={{ .Version }}
+
+archives:
+  - name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "arm64" }}aarch64{{ end }}
+    files:
+      - etc
+      - license/LICENSE*
+      - scripts
+      - systemd
+
+nfpms:
+  - id: server
+    builds:
+      - server
+    package_name: "scylla-manager-server"
+    file_name_template: >-
+      {{ .ProjectName }}-server-{{ .Version }}_{{ .Os }}.{{- if eq .Arch "amd64" }}x86_64{{- else if eq .Arch "arm64" }}aarch64{{ end }}
+    vendor: ScyllaDB
+    homepage: https://www.scylladb.com/product/scylla-manager/
+    maintainer: Michał Jan Matczuk <michal@scylladb.com>
+    description: "Scylla Manager server"
+    license: Proprietary
+    replaces:
+      - scylla-manager
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+    contents:
+      - dst: /var/lib/scylla-manager
+        type: "dir"
+        file_info:
+          mode: 0770
+          owner: scylla-manager
+          group: scylla-manager
+      - src: etc/scylla-manager.yaml
+        dst: /etc/scylla-manager/scylla-manager.yaml
+        type: "config|noreplace"
+      - src: scripts/scyllamgr_setup
+        dst: /usr/sbin/scyllamgr_setup
+      - src: systemd/scylla-manager-check-for-updates.service
+        dst: /usr/lib/systemd/system/scylla-manager-check-for-updates.service
+      - src: systemd/scylla-manager-check-for-updates.timer
+        dst: /usr/lib/systemd/system/scylla-manager-check-for-updates.timer
+      - src: systemd/scylla-manager.service
+        dst: /usr/lib/systemd/system/scylla-manager.service
+      - src: license/LICENSE.PROPRIETARY
+        dst: /usr/share/doc/scylla-manager-server/LICENSE
+      - src: license/LICENSE.3RD_PARTY.scylla-manager-server
+        dst: /usr/share/doc/scylla-manager-server/LICENSE.3RD_PARTY
+    rpm:
+      group: Applications/Blockchain
+      compression: xz
+    overrides:
+      deb:
+        conflicts:
+          - scylla-manager
+        file_name_template: >-
+          {{ .ProjectName }}-server_{{ .Version }}.{{ .Os }}_{{ .Arch }}
+
+        scripts:
+          preinstall: deb/scylla-manager-server.preinst
+          postinstall: deb/scylla-manager-server.postinst
+          preremove: deb/scylla-manager-server.prerm
+          postremove: deb/scylla-manager-server.postrm
+      rpm:
+        scripts:
+          preinstall: rpm/scylla-manager-server.preinst
+          postinstall: rpm/scylla-manager-server.postinst
+          preremove: rpm/scylla-manager-server.prerm
+          postremove: rpm/scylla-manager-server.postrm
+
+checksum:
+  name_template: 'checksums'

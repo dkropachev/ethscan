@@ -1,0 +1,34 @@
+issues:
+  exclude:
+  - Error return value of `.*.Unlock` is not checked
+  - Error return value of `.*.Completed` is not checked
+  new: true
+  new-from-rev: origin/main
+linters:
+  disable-all: true
+  enable:
+  - errcheck
+  - gocritic
+  - gofumpt
+  - goimports
+  - gosimple
+  - govet
+  - ineffassign
+  - misspell
+  - predeclared
+  - thelper
+  - tparallel
+  - typecheck
+  - unused
+run:
+  allow-parallel-runners: true
+  deadline: 10m
+  modules-download-mode: readonly
+  tests: true
+  build-tags: []
+linters-settings:
+  gofumpt:
+    lang-version: "1.22"
+    extra-rules: true
+  goimports:
+    local-prefixes: github.com/accDB/test_tracker
